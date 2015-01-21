@@ -1,23 +1,29 @@
 /**
  * Proxireq tests
+ *
+ *   Tests rely on serviceUri property to a working proxibase server in ./config.json
  */
 
-var assert = require("assert")
-// var assert = require("better-assert")
-// var assert = require("chai").assert
 
+// Dependencies
+var util = require("util")
+var assert = require("assert")
 var _ = require("lodash")
 var tipe = require("tipe")
-var util = require("util")
 var serviceUri = require('./config.json').serviceUri
+
 
 // Logger
 var log = function(o, depth) {
   console.log(util.inspect(o, {hidden: true, depth: depth || 4, colors: true}))
 }
 
+
+// Test subject
 var proxireq = require("../")
 
+
+// Public methods
 var methods = {
   path: true,
   query: true,
@@ -32,6 +38,7 @@ var methods = {
 }
 
 
+// Mocha tests
 describe('Proxireq', function() {
 
   it('can get and set its serviceUri', function() {
@@ -39,6 +46,7 @@ describe('Proxireq', function() {
     assert(_.isString(proxireq.serviceUri()))
     assert(serviceUri === proxireq.serviceUri(serviceUri))
   })
+
 
   it('should return a proxireq.Client instance', function() {
 
@@ -54,12 +62,14 @@ describe('Proxireq', function() {
     assert(_.isObject(client._options))   // _options exists
   })
 
+
   it('should have all its methods', function() {
     var client = proxireq()
     for (var method in methods) {
       assert(_.isFunction(client[method]), method)
     }
   })
+
 
   it('should not have any extra methods', function() {
     var client = proxireq()
@@ -68,11 +78,13 @@ describe('Proxireq', function() {
     })
   })
 
-  it('should work', function(done) {
-    var client = proxireq().get().end(function(err, res, body) {
+
+  it('hello world', function(done) {
+    proxireq.get().end(function(err, res, body) {
       assert(!err, err)
       assert(res)
       assert(body)
+      assert(body.name)
       done()
     })
   })

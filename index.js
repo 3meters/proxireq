@@ -45,7 +45,7 @@ function client(options) {
 }
 
 
-
+// Constructor
 function Client(options) {
 
   if (!(options && _.isPlainObject(options))) options = {}
@@ -62,6 +62,7 @@ function Client(options) {
     enumerable: false,
     value: _.extend(defaults, options)
   })
+
   return this
 }
 
@@ -179,8 +180,29 @@ function build(_ops) {
 
 }
 
-// Build the client contructor
-Client.prototype = _.extend(Client.prototype, methods)
+
+// Bootstrap the module
+function init() {
+
+  // Generate the client's contructors from methods
+  Client.prototype = _.extend(Client.prototype, methods)
+
+  // Generate the short-cut methods on the module itself.
+  // These create a new client instance on the fly and
+  // execute the specified method.
+  for (var name in methods) {
+    client[name] = function() {
+      var cl = new Client()
+      return cl[name].apply(null, arguments)
+    }
+  }
+}
+
+
+// Execute init on require
+init()
+
+log({client: client})
 
 
 // Exports
