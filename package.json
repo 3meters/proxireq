@@ -1,0 +1,27 @@
+{
+  "name": "proxireq",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Proxibase service request client",
+  "author": {
+    "name": "3meters Engineering",
+    "email": "dev@3meters.com>"
+  },
+  "contributors": [
+    { "name": "George Snelling", "email": "george@3meters.com" }
+  ],
+  "dependencies": {
+    "lodash": "*",
+    "tipe": "*",
+    "async": "*",
+    "request": "*"
+  },
+  "devDependencies": {
+    "mocha": "*"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": "git://github.com:3meters/proxireq",
+  "main": "index.js"
+}
