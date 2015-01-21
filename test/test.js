@@ -25,15 +25,14 @@ var proxireq = require("../")
 
 // Public methods
 var methods = {
-  path: true,
-  query: true,
-  options: true,
-  formData: true,
-  log: true,
   get: true,
   post: true,
   del: true,
-  inspect: true,
+  path: true,
+  query: true,
+  formData: true,
+  options: true,
+  debug: true,
   end: true,
 }
 
@@ -79,8 +78,18 @@ describe('Proxireq', function() {
   })
 
 
-  it('hello world', function(done) {
-    proxireq.get().end(function(err, res, body) {
+  it('gets', function(done) {
+    proxireq().get().debug().end(function(err, res, body) {
+      assert(!err, err)
+      assert(res)
+      assert(body)
+      assert(body.name)
+      done()
+    })
+  })
+
+  it('gets with autointancing', function(done) {
+    proxireq.get().debug().end(function(err, res, body) {
       assert(!err, err)
       assert(res)
       assert(body)

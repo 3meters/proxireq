@@ -3,13 +3,13 @@
  */
 
 var _ = require("lodash")
-var inspect = require("util").inspect
-var async = require("async")
+var util = require("util")
 var request = require("request")
+var extend = _.extend
 
 // Basic Logger
 var log = function(o, depth) {
-  console.log(inspect(o, {depth: depth || 4, colors: true}))
+  console.log(util.inspect(o, {depth: depth || 4, colors: true}))
 }
 
 
@@ -21,141 +21,134 @@ var _config = {
 }
 
 
+// Return a client instance
+function client() {
+  return new Client()
+}
+
+
+// Constructor
+function Client() {
+  // Create a hidden _options property
+  Object.defineProperty(this, '_options', {
+    enumerable: false,
+    value: {
+      method: 'get',
+      path: '',
+      query: {},
+      headers: {},
+    }
+  })
+}
+
+
+// Make exendable
+client.Client = Client
+
+
 // Get or Set the service uri
-function serviceUri(uri) {
+client.serviceUri = function(uri) {
   if (_.isString(uri)) _serviceUri = uri
   return _serviceUri
 }
 
 
 // Get or set the module config options
-function config(ops) {
+client.config = function(ops) {
   if (_.isObject(ops)) {
     _config = ops
   }
-  if (_.isString(config.serviceUri)) serviceUri(config.serviceUri)
+  if (_.isString(ops.serviceUri)) client.serviceUri(ops.serviceUri)
   return _config
 }
 
 
-
-// Return a client instance
-function client(options) {
-  return new Client(options)
-}
+//
+// Client instance methods
+//
 
 
-// Constructor
-function Client(options) {
-
-  if (!(options && _.isPlainObject(options))) options = {}
-
-  var defaults = {
-    method: 'get',
-    path: '',
-    query: {},
-    headers: {},
-  }
-
-  // Create a hidden _options property
-  Object.defineProperty(this, '_options', {
-    enumerable: false,
-    value: _.extend(defaults, options)
-  })
-
+// Incrementally build up the request query object
+Client.prototype.query = function(obj) {
+  this._options.query = extend(this._options.query, obj)
   return this
 }
 
 
-var methods = {
-
-  // Incrementally build up the request query object
-  query: function(obj) {
-    this._options.query = _.merge(this._options.query, obj)
-    return this
-  },
-
-
-  // Build up request path, adding slashes as needed
-  path: function(pathPart) {
-    var sep = (pathPart[0] === '/') ? '' : '/'
-    this._options.path += sep + pathPart
-    return this
-  },
+// Build up request path, adding slashes as needed
+Client.prototype.path = function(pathPart) {
+  var sep = (pathPart[0] === '/') ? '' : '/'
+  this._options.path += sep + pathPart
+  return this
+}
 
 
-  // Get
-  get: function(path) {
-    this._options.method = 'get'
-    if (path) this._options.path = path
-    return this
-  },
+// Get
+Client.prototype.get = function(path) {
+  this._options.method = 'get'
+  if (path) this._options.path = path
+  return this
+}
 
 
-  // Post
-  post: function(path) {
-    this._options.method = 'post'
-    if (path) this._options.path = 'path'
-    return this
-  },
+// Post
+Client.prototype.post = function(path) {
+  this._options.method = 'post'
+  if (path) this._options.path = 'path'
+  return this
+}
 
 
-  // Delete
-  del: function(path) {
-    this._options.method = 'del'
-    if (path) this._options.path = path
-    return this
-  },
+// Delete
+Client.prototype.del = function(path) {
+  this._options.method = 'del'
+  if (path) this._options.path = path
+  return this
+}
 
 
-  // Incrementally attach form data
-  formData: function(formData) {
-    this._options.formData = this._options.formData || {}
-    this._options.formData = _.extend(this._options.formData, formData)
-    return this
-  },
+// Incrementally attach form data
+Client.prototype.formData = function(formData) {
+  this._options.formData = this._options.formData || {}
+  this._options.formData = extend(this._options.formData, formData)
+  return this
+}
 
 
-  // Set other arbitrary request options
-  options: function(options) {
-    if (_.isObject(options)) {
+// Set other arbitrary request options
+Client.prototype.options = function(options) {
 
-      // Ignore options that have other setters
-      delete options.url
-      delete options.uri
-      for (var key in options) {
-        if (this[key]) delete options[key]
-      }
+  if (_.isObject(options)) {
 
-      this._options.requestOptions = options
+    // Ignore options that have other setters
+    delete options.url
+    delete options.uri
+    for (var key in options) {
+      if (this[key]) delete options[key]
     }
-    return this
-  },
+
+    this._options.requestOptions = options
+  }
+  return this
+}
 
 
-  // Log request options before executing
-  log: function() {
-    this._options.log = true
-    return this
-  },
+// Log request options before executing
+Client.prototype.debug = function() {
+  this._options.debug = true
+  return this
+}
 
 
-  // Build the request and return it without executing
-  inspect: function() {
-    return build(this._options)
-  },
+// Build and execute the request
+Client.prototype.end = function(cb) {
+  if (!_.isFunction(cb)) return new Error('end expects a callback function')
 
+  // Build the service request options
+  var ops = build(this._options)
 
-  // Build and execute the request
-  end: function(cb) {
-    if (!_.isFunction(cb)) return new Error('end expects a callback function')
-
-    // Build the service request options
-    var ops = build(this._options)
-
-    if (this._options.log) log(ops)
-    return request(ops, cb)
-  },
+  if (this._options.debug) log({debugRequest: ops})
+  return request(ops, cb)
 }
 
 
@@ -167,46 +160,29 @@ function build(_ops) {
   delete ops.serviceUri
 
   // Add in selected props from _options
-  var ops = _.extend(ops, {
+  ops = extend(ops, {
     url: _serviceUri + _ops.path,
     method: _ops.method,
     query: _ops.query,
   })
 
   // Merge in additional request-specific options
-  ops = _.extend(ops, _ops.requestOptions)
+  ops = extend(ops, _ops.requestOptions)
 
   return ops
-
 }
 
 
-// Bootstrap the module
-function init() {
 
-  // Generate the client's contructors from methods
-  Client.prototype = _.extend(Client.prototype, methods)
-
-  // Generate the short-cut methods on the module itself.
-  // These create a new client instance on the fly and
-  // execute the specified method.
-  for (var name in methods) {
-    client[name] = function() {
-      var cl = new Client()
-      return cl[name].apply(null, arguments)
-    }
+// Generate methods on the module itself that will
+// create a new client instnace on the fly and apply
+// arguments to it
+Object.keys(Client.prototype).forEach(function(method) {
+  client[method] = function() {
+    var cl = client()
+    return cl[method].apply(cl, arguments)
   }
-}
+})
 
 
-// Execute init on require
-init()
-
-log({client: client})
-
-
-// Exports
 module.exports = client
-module.exports.Client = Client
-module.exports.serviceUri = serviceUri
-module.exports.config = config
