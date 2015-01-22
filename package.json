@@ -13,8 +13,8 @@
   "dependencies": {
     "lodash": "*",
     "tipe": "*",
-    "async": "*",
-    "request": "*"
+    "request": "*",
+    "superagent": "*"
   },
   "devDependencies": {
     "mocha": "*"

@@ -7,11 +7,11 @@
 
 // Dependencies
 var util = require("util")
-var assert = require("assert")
 var _ = require("lodash")
 var tipe = require("tipe")
 var serviceUri = require('./config.json').serviceUri
-
+var assert = require("assert")
+var seed = String(Math.floor(Math.random() * 10000))
 
 // Logger
 var log = function(o, depth) {
@@ -20,7 +20,7 @@ var log = function(o, depth) {
 
 
 // Test subject
-var proxireq = require("../")
+var preq = require("../")
 
 
 // Public methods
@@ -30,8 +30,7 @@ var methods = {
   del: true,
   path: true,
   query: true,
-  formData: true,
-  options: true,
+  send: true,
   debug: true,
   end: true,
 }
@@ -41,19 +40,19 @@ var methods = {
 describe('Proxireq', function() {
 
   it('can get and set its serviceUri', function() {
-    assert(_.isFunction(proxireq.serviceUri))
-    assert(_.isString(proxireq.serviceUri()))
-    assert(serviceUri === proxireq.serviceUri(serviceUri))
+    assert(_.isFunction(preq.serviceUri))
+    assert(_.isString(preq.serviceUri()))
+    assert(serviceUri === preq.serviceUri(serviceUri))
   })
 
 
   it('should return a proxireq.Client instance', function() {
 
-    assert(_.isFunction(proxireq))
-    var client = proxireq()
+    assert(_.isFunction(preq))
+    var client = preq()
 
     assert(_.isObject(client))
-    assert(client instanceof proxireq.Client)
+    assert(client instanceof preq.Client)
 
     for (var key in client) {
       assert(key !== '_options', key)     // _options is non-enumerable
@@ -63,7 +62,7 @@ describe('Proxireq', function() {
 
 
   it('should have all its methods', function() {
-    var client = proxireq()
+    var client = preq()
     for (var method in methods) {
       assert(_.isFunction(client[method]), method)
     }
@@ -71,7 +70,7 @@ describe('Proxireq', function() {
 
 
   it('should not have any extra methods', function() {
-    var client = proxireq()
+    var client = preq()
     _.functions(client).forEach(function(fnName) {
       assert(methods[fnName], fnName)
     })
@@ -79,8 +78,9 @@ describe('Proxireq', function() {
 
 
   it('gets', function(done) {
-    proxireq().get().debug().end(function(err, res, body) {
-      assert(!err, err)
+    preq().get("/").debug().end(function(err, res, body) {
+      log(err)
+      assert(!err)
       assert(res)
       assert(body)
       assert(body.name)
@@ -88,15 +88,31 @@ describe('Proxireq', function() {
     })
   })
 
-  it('gets with autointancing', function(done) {
-    proxireq.get().debug().end(function(err, res, body) {
+
+  it('gets with autoinstancing', function(done) {
+    preq.get('/data').end(function(err, res, body) {
       assert(!err, err)
       assert(res)
       assert(body)
-      assert(body.name)
+      assert(body.data && body.data.users)
       done()
     })
   })
 
+  it('creates users', function(done) {
+    preq.post('/user/create').send({
+      data: {
+        name: 'fake user ' + seed,
+        email: 'fake' + seed + '@3meters.com',
+        password: 'password',
+      },
+      secret: 'larissa',
+      installId: 'preqTest',
+    }).debug().end(function(err, res, body) {
+      assert(!err)
+      assert(body)
+      log(body)
+      done()
+    })
+  })
 })
-
