@@ -14,18 +14,6 @@ var log = function(o, depth) {
 }
 
 
-// Module global privates
-var _serviceUri = 'https://localhost:20678'
-var _config = {
-  serviceUri: _serviceUri,
-  json: true,
-  headers: {
-    "Content-type": "application/json"
-  }
-
-}
-
-
 // Return a client instance
 function client() {
   return new Client()
@@ -51,17 +39,18 @@ function Client() {
 client.Client = Client
 
 
-// Get or Set the service uri
-client.serviceUri = function(uri) {
-  if (_.isString(uri)) _serviceUri = uri
-  return _serviceUri
+
+// Module config options
+var _config = {
+  serviceUri: '127.0.0.1',
+  json: true,
 }
 
 
-// Get or set the module config options
+// Get or set module config
 client.config = function(ops) {
-  if (_.isObject(ops)) _config = ops
-  if (_.isString(ops.serviceUri)) client.serviceUri(ops.serviceUri)
+  if (_.isString(ops)) _config.serviceUri = ops
+  if (_.isObject(ops)) _config = _.extend(_config, ops)
   return _config
 }
 
@@ -83,13 +72,14 @@ var methods = {
   post: function(path) {
     this._options.method = 'post'
     if (path) this._options.path = path
+    if (!this._options.body) this._options.body = {}
     return this
   },
 
 
   // Delete
   del: function(path) {
-    this._options.method = 'del'
+    this._options.method = 'delete'
     if (path) this._options.path = path
     return this
   },
@@ -111,8 +101,8 @@ var methods = {
 
 
   // Data to post in the body
-  send: function(body) {
-    this._options.body = body
+  body: function(data) {
+    this._options.body = data
     return this
   },
 
@@ -142,8 +132,8 @@ var methods = {
   },
 
 
-  // Build and execute the request
-  endOld: function(cb) {
+  // Build and execute the request using Mikael's request
+  end: function(cb) {
     if (!_.isFunction(cb)) return new Error('end expects a callback function')
 
     var _options = this._options
@@ -152,15 +142,20 @@ var methods = {
     var options = _.clone(_config)
     delete options.serviceUri
 
-    // Add in selected props from _options
-    options = extend(options, {
-      url: _serviceUri + _options.path,
-      method: _options.method,
-      query: _options.query,
-    })
-
     // Merge in additional request-specific options
     options = extend(options, _options.requestOptions)
+
+    if (_options.path.length && _options.path[0] !== '/') {
+      _options.path = '/' + _options.path
+    }
+
+    // Add in selected props from _options
+    options = extend(options, {
+      url: _config.serviceUri + _options.path,
+      method: _options.method,
+      qs: _options.query,
+    })
+    if (_options.body) options.body = _options.body
 
     // Debug request options if needed
     if (_options.debug) log({debugRequest: options})
@@ -168,19 +163,24 @@ var methods = {
     return request(options, cb)
   },
 
-  // Build and execute the request
-  end: function(cb) {
+
+  // Build and execute the request using TJ's superagent
+  // Note that other than the serviceUri no other module options
+  // are applied.  If you want to use SSL with an unsigned cert,
+  // superagent has no way to set that directly: you have to set
+  // an evironment variable.
+  endSa: function(cb) {
     if (!_.isFunction(cb)) return new Error('end expects a callback function')
 
     var _ops = this._options
-    _ops.url = _serviceUri + _ops.path
+    _ops.url = _config.serviceUri + _ops.path
 
     // Debug request options if needed
-    if (_ops.debug) log({debugRequestOptions: _ops})
+    if (_ops.debug) log({debugRequest: _ops})
 
     superagent[_ops.method](_ops.url)
-      // .query(_ops.query)
-      // .send(_ops.send)
+      .query(_ops.query)
+      .send(_ops.body)
       .end(function(err, res) {
         if (err) return cb(err)
         cb(err, res, res.body)
@@ -189,9 +189,12 @@ var methods = {
   }
 }
 
-// Prune cruft
-delete methods.options
-delete methods.endOld
+
+// Aliases
+methods.sign = methods.query
+methods.delete = methods.del
+methods.remove = methods.del
+methods.send = methods.body
 
 
 // Generate the methods that will be inherited by each client instance

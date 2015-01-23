@@ -8,16 +8,29 @@
 // Dependencies
 var util = require("util")
 var _ = require("lodash")
-var tipe = require("tipe")
-var serviceUri = require('./config.json').serviceUri
 var assert = require("assert")
+
+
+// Config
+var testConfig = require('./config.json')
+
+
+// For creating test documents with some randomness
 var seed = String(Math.floor(Math.random() * 10000))
+
 
 // Logger
 var log = function(o, depth) {
   console.log(util.inspect(o, {hidden: true, depth: depth || 4, colors: true}))
 }
 
+// Response checker
+function ok(res) {
+  if (res.statusCode < 200 || res.statusCode >= 400) {
+    return new Error(res.body)
+  }
+  return true
+}
 
 // Test subject
 var preq = require("../")
@@ -28,21 +41,34 @@ var methods = {
   get: true,
   post: true,
   del: true,
+  delete: true,
+  remove: true,
   path: true,
   query: true,
+  sign: true,
+  body: true,
   send: true,
+  options: true,
   debug: true,
   end: true,
+  endSa: true,
 }
 
 
 // Mocha tests
 describe('Proxireq', function() {
 
-  it('can get and set its serviceUri', function() {
-    assert(_.isFunction(preq.serviceUri))
-    assert(_.isString(preq.serviceUri()))
-    assert(serviceUri === preq.serviceUri(serviceUri))
+  // used for multiple tests
+  var user
+  var cred
+
+  it('can be configured', function() {
+    assert(_.isObject(preq.config()))
+    assert(_.isString(preq.config().serviceUri))
+    var configured = preq.config(testConfig)
+    for (var key in testConfig) {
+      assert(configured[key] === testConfig[key])
+    }
   })
 
 
@@ -78,10 +104,9 @@ describe('Proxireq', function() {
 
 
   it('gets', function(done) {
-    preq().get("/").debug().end(function(err, res, body) {
-      log(err)
+    preq().get("/").end(function(err, res, body) {
       assert(!err)
-      assert(res)
+      assert(ok(res))
       assert(body)
       assert(body.name)
       done()
@@ -91,28 +116,77 @@ describe('Proxireq', function() {
 
   it('gets with autoinstancing', function(done) {
     preq.get('/data').end(function(err, res, body) {
-      assert(!err, err)
-      assert(res)
-      assert(body)
+      assert(!err)
+      assert(ok(res))
       assert(body.data && body.data.users)
       done()
     })
   })
 
-  it('creates users', function(done) {
-    preq.post('/user/create').send({
+  it('posts', function(done) {
+    preq.post('/user/create').body({
       data: {
         name: 'fake user ' + seed,
         email: 'fake' + seed + '@3meters.com',
-        password: 'password',
+        password: 'password123',
+        secret: 'larissa',
+        installId: 'preqTest',
       },
-      secret: 'larissa',
-      installId: 'preqTest',
-    }).debug().end(function(err, res, body) {
+    }).end(function(err, res, body) {
       assert(!err)
-      assert(body)
-      log(body)
+      assert(ok(res))
+      user = body.user
+      cred = body.credentials
       done()
     })
+  })
+
+  it('gets authenticated', function(done) {
+    preq.query(cred)
+      .path('data/users')
+      .path(user._id)
+      .end(function(err, res, body) {
+        assert(!err)
+        assert(ok(res))
+        assert(body.data)
+        assert(body.data.email)  // private field unless user is authenticated
+        done()
+      })
+  })
+
+  it('removes', function(done) {
+    var req = preq()
+    req.query(cred)
+    req.del().path('data/users').path(user._id).end(function(err, res) {
+      assert(!err)
+      assert(ok(res))
+      preq.post('/find/users/' + user._id).end(function(err, res, body) {
+        assert(!err)
+        assert(ok(res))
+        assert(body)
+        assert(body.data === null)
+        done()
+      })
+    })
+  })
+
+  it('returns errors properly', function(done) {
+    preq.get('/data/invalidname/').end(function(err, res, body) {
+      assert(!err)
+      assert.throws(ok(res))
+      assert(res.statusCode === 404)
+      assert(body)
+      assert(body.error)
+      done()
+    })
+  })
+
+  it('passes through request options', function(done) {
+    preq.get('/data/users')
+      .options({timeout: 1})  // should cause request to return an error
+      .end(function(err, res, body) {
+        assert(err)
+        done()
+      })
   })
 })

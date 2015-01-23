@@ -1,3 +1,5 @@
 {
-  "serviceUri": "https://api.aircandi.com:8443/v1"
+  "serviceUri": "https://api.aircandi.com:8443/v1",
+  "serviceUri": "https://localhost:6643/v1",
+  "strictSSL": false
 }
