@@ -39,7 +39,6 @@ function Client() {
 client.Client = Client
 
 
-
 // Module config options
 var _config = {
   serviceUri: '127.0.0.1',
@@ -49,9 +48,17 @@ var _config = {
 
 // Get or set module config
 client.config = function(ops) {
-  if (_.isString(ops)) _config.serviceUri = ops
-  if (_.isObject(ops)) _config = _.extend(_config, ops)
-  return _config
+
+  // set and return the configurated module
+  // e.g. var request = require('proxireq').config({serviceUri: <uri>})
+  if (ops) {
+    if (_.isString(ops)) _config.serviceUri = ops
+    if (_.isObject(ops)) _config = _.extend(_config, ops)
+    return client
+  }
+
+  // return the config options
+  else return _config
 }
 
 

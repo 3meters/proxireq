@@ -62,15 +62,18 @@ describe('Proxireq', function() {
   var user
   var cred
 
-  it('can be configured', function() {
+  it('has a default config', function() {
     assert(_.isObject(preq.config()))
     assert(_.isString(preq.config().serviceUri))
-    var configured = preq.config(testConfig)
-    for (var key in testConfig) {
-      assert(configured[key] === testConfig[key])
-    }
   })
 
+  it('can be configured', function() {
+    preq = preq.config(testConfig)
+    var config = preq.config()
+    for (var key in testConfig) {
+      assert(config[key] === testConfig[key], key)
+    }
+  })
 
   it('should return a proxireq.Client instance', function() {
 
@@ -86,7 +89,6 @@ describe('Proxireq', function() {
     assert(_.isObject(client._options))   // _options exists
   })
 
-
   it('should have all its methods', function() {
     var client = preq()
     for (var method in methods) {
@@ -94,14 +96,12 @@ describe('Proxireq', function() {
     }
   })
 
-
   it('should not have any extra methods', function() {
     var client = preq()
     _.functions(client).forEach(function(fnName) {
       assert(methods[fnName], fnName)
     })
   })
-
 
   it('gets', function(done) {
     preq().get("/").end(function(err, res, body) {
@@ -112,7 +112,6 @@ describe('Proxireq', function() {
       done()
     })
   })
-
 
   it('gets with autoinstancing', function(done) {
     preq.get('/data').end(function(err, res, body) {
