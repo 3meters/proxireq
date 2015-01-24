@@ -15,22 +15,28 @@ var assert = require("assert")
 var testConfig = require('./config.json')
 
 
-// For creating test documents with some randomness
-var seed = String(Math.floor(Math.random() * 10000))
+// Inspect
+function inspect(o, depth) {
+  return util.inspect(o, {hidden: true, depth: depth || 4, colors: true})
+}
 
 
 // Logger
 var log = function(o, depth) {
-  console.log(util.inspect(o, {hidden: true, depth: depth || 4, colors: true}))
+  console.log(inspect(o, depth))
 }
 
-// Response checker
+
+// For creating test documents with some randomness
+var seed = String(Math.floor(Math.random() * 10000))
+
+
+// Response checker that throws an error including the response body
 function ok(res) {
-  if (res.statusCode < 200 || res.statusCode >= 400) {
-    return new Error(res.body)
-  }
+  if (!res.ok) return new Error(inspect(res.body))
   return true
 }
+
 
 // Test subject
 var preq = require("../")
@@ -61,6 +67,7 @@ describe('Proxireq', function() {
   // used for multiple tests
   var user
   var cred
+
 
   it('has a default config', function() {
     assert(_.isObject(preq.config()))
@@ -174,6 +181,7 @@ describe('Proxireq', function() {
       assert(!err)
       assert.throws(ok(res))
       assert(res.statusCode === 404)
+      assert(res.status === 404)  // alias
       assert(body)
       assert(body.error)
       done()

@@ -167,7 +167,14 @@ var methods = {
     // Debug request options if needed
     if (_options.debug) log({debugRequest: options})
 
-    return request(options, cb)
+    // Add a little response suger
+    request(options, function(err, res, body) {
+      if (err) return cb(err)
+      res.status = res.statusCode
+      if (body && res.status >= 200 && res.status < 400) res.ok = true
+      else res.ok = false
+      cb(err, res, body)
+    })
   },
 
 
