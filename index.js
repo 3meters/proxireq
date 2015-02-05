@@ -5,7 +5,6 @@
 var _ = require("lodash")
 var util = require("util")
 var request = require("request")
-var superagent = require("superagent")
 var extend = _.extend
 
 // Basic Logger
@@ -176,31 +175,6 @@ var methods = {
       cb(err, res, body)
     })
   },
-
-
-  // Build and execute the request using TJ's superagent
-  // Note that other than the serviceUri no other module options
-  // are applied.  If you want to use SSL with an unsigned cert,
-  // superagent has no way to set that directly: you have to set
-  // an evironment variable.
-  endSa: function(cb) {
-    if (!_.isFunction(cb)) return new Error('end expects a callback function')
-
-    var _ops = this._options
-    _ops.url = _config.serviceUri + _ops.path
-
-    // Debug request options if needed
-    if (_ops.debug) log({debugRequest: _ops})
-
-    superagent[_ops.method](_ops.url)
-      .query(_ops.query)
-      .send(_ops.body)
-      .end(function(err, res) {
-        if (err) return cb(err)
-        cb(err, res, res.body)
-      })
-
-  }
 }
 
 

@@ -57,7 +57,6 @@ var methods = {
   options: true,
   debug: true,
   end: true,
-  endSa: true,
 }
 
 
