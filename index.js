@@ -106,8 +106,10 @@ var methods = {
 
 
   // Build up request path, adding slashes as needed
-  addPath: function(pathPart) {
+  pathAdd: function(pathPart) {
+    if (!pathPart) return this
     var sep = (pathPart[0] === '/') ? '' : '/'
+    this._options.path = this._options.path || ''
     this._options.path += sep + pathPart
     return this
   },

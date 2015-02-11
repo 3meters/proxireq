@@ -50,7 +50,7 @@ var methods = {
   delete: true,
   remove: true,
   path: true,
-  addPath: true,
+  pathAdd: true,
   query: true,
   sign: true,
   body: true,
@@ -150,7 +150,7 @@ describe('Proxireq', function() {
   it('gets authenticated', function(done) {
     preq.query(cred)
       .path('data/users')
-      .addPath(user._id)
+      .pathAdd(user._id)
       .end(function(err, res, body) {
         assert(!err)
         assert(ok(res))
@@ -163,7 +163,7 @@ describe('Proxireq', function() {
   it('removes', function(done) {
     var req = preq()
     req.query(cred)
-    req.del().path('data/users').addPath(user._id).end(function(err, res) {
+    req.del().pathAdd('data/users').pathAdd(user._id).end(function(err, res) {
       assert(!err)
       assert(ok(res))
       preq.post('/find/users/' + user._id).end(function(err, res, body) {
