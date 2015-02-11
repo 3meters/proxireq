@@ -8,8 +8,8 @@ var request = require("request")
 var extend = _.extend
 
 // Basic Logger
-var log = function(o, depth) {
-  console.log(util.inspect(o, {depth: depth || 4, colors: true}))
+var log = function(o) {
+  console.log(util.inspect(o, {depth: 12, colors: true}))
 }
 
 
@@ -98,8 +98,15 @@ var methods = {
   },
 
 
+  // Set the path
+  path: function(path) {
+    this._options.path = path
+    return this
+  },
+
+
   // Build up request path, adding slashes as needed
-  path: function(pathPart) {
+  addPath: function(pathPart) {
     var sep = (pathPart[0] === '/') ? '' : '/'
     this._options.path += sep + pathPart
     return this
@@ -164,7 +171,7 @@ var methods = {
     if (_options.body) options.body = _options.body
 
     // Debug request options if needed
-    if (_options.debug) log({debugRequest: options})
+    if (_options.debug) log({proxireq: options})
 
     // Add a little response suger
     request(options, function(err, res, body) {
